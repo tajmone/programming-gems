@@ -33,5 +33,16 @@
 *.txt        text
 LICENSE      text
 
+## Make Files
+#############
+makefile*   text eol=lf
+Makefile*   text eol=lf
+*.mak       text eol=lf
+*.mk        text eol=lf
+
+## Man Pages, etc.
+##################
+*.3   text eol=lf
+
 
 # EOF #

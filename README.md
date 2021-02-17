@@ -1,3 +1,5 @@
+![build status][travis badge]
+
 # Programming Gems
 
 - https://github.com/tajmone/programming-gems
@@ -11,6 +13,10 @@ Each asset is governed by its own license terms, as indicated in its containing 
 <!-----------------------------------------------------------------------------
                                REFERENCE LINKS
 ------------------------------------------------------------------------------>
+
+<!-- badges -->
+
+[travis badge]: https://travis-ci.com/tajmone/programming-gems.svg?branch=main "Travis CI status for code styles validation via EditorConfig and EClint"
 
 <!-- people -->
 
