@@ -1,0 +1,68 @@
+#################################################
+#  Programming Gems:                            #
+#  https://github.com/tajmone/programming-gems  #
+#################################################
+
+root = true
+
+## Configurations
+#################
+[.{git*,editorconfig,*.yml}]
+indent_style = space
+indent_size = unset
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+
+## Markdown GFM
+###############
+[*.md]
+indent_style = space
+indent_size = unset
+end_of_line = unset
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+
+## Shell Scripts
+################
+[*.sh]
+end_of_line = lf
+indent_style = tab
+indent_size = unset
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+
+## Batch Scripts
+################
+[*.{bat,cmd}]
+indent_style = tab
+indent_size = unset
+end_of_line = crlf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+
+## C Source Files
+#################
+[*.{c,h}]
+indent_style = space
+indent_size = 3
+end_of_line = unset
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+; C-style doc comments:
+block_comment_start = /*
+block_comment = *
+block_comment_end = */
+
+
+# EOF #

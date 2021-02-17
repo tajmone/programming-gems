@@ -1,0 +1,84 @@
+#################################################
+#  Programming Gems:                            #
+#  https://github.com/tajmone/programming-gems  #
+#################################################
+
+
+## Binary files
+###############
+
+# Object files
+# ------------
+*.elf
+*.ko
+*.o
+*.obj
+
+# Static libraries
+# ----------------
+*.a
+*.la
+*.lib
+*.lo
+
+# Shared objects
+# --------------
+*.dll
+*.dylib
+*.so
+*.so.*
+
+# Executables
+# -----------
+*.app
+*.exe
+*.out
+
+
+## Misc Work Files
+##################
+
+# Temporary/backup or removed files and folders:
+___*
+___*.*
+
+# Links and URLs
+*.lnk
+*.url
+
+## Apps Local Settings & Temp Files
+###################################
+
+# Chrome's debug logs for local HTML pages:
+debug.log
+
+############################
+## COMMON IGNORE PATTERNS ##
+############################
+
+## Linux
+########
+*~
+.directory
+.fuse_hidden*
+.nfs*
+.Trash-*
+
+## macOS
+########
+*.DS_Store
+._*
+.AppleDouble
+.LSOverride
+Icon
+
+## Windows
+##########
+Thumbs.db
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+.BIN/
+
+
+# EOF #
