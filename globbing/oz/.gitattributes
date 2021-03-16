@@ -1,0 +1,7 @@
+
+## oz's glob pattern matcher
+############################
+
+# Default repository settings overrides...
+
+*.dat   text eol=lf

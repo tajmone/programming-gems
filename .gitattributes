@@ -47,9 +47,9 @@ Makefile*   text eol=lf
 *.3   text eol=lf
 
 
-## Data Files, etc.
-###################
-*.dat   text eol=lf
+## Binary Data Files
+####################
+*.dat   binary
 
 
 # EOF #

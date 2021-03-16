@@ -1,0 +1,13 @@
+
+## oz's glob pattern matcher
+############################
+
+# Default repository settings overrides...
+
+[*.dat]
+end_of_line = lf
+indent_style = tab
+indent_size = unset
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
