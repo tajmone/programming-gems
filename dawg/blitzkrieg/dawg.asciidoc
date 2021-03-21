@@ -1,0 +1,445 @@
+= Directed Acyclic Word Graph or DAWG
+JohnPaul Adamovsky <logarithm69@hotmail.com>
+:date: 2011-04-11
+:lang: en
+:doctype: article
+// TOC Settings:
+:toclevels: 5
+// GitLab setting to show TOC after Preamble
+:toc: macro
+// TOC ... HTML Backend Hack to show TOC on the Left
+ifdef::backend-html5[]
+:toc: left
+endif::[]
+// TOC ... GitHub Hack to show TOC after Preamble (required)
+ifdef::env-github[]
+:toc: macro
+endif::[]
+// Misc Settings:
+:sectnums!:
+:idprefix:
+:experimental: true
+:icons: font
+:linkattrs: true
+:reproducible: true
+:sectanchors:
+// Paths:
+:imagesdir: images
+
+////
+================================================================================
+This article was written by JohnPaul Adamovsky, originally published April 11,
+2011, on his website:
+
+  https://pages.pathcom.com/~vadco/dawg.html
+
+Converted to AsciiDoc by Tristano Ajmone in March 2021.
+
+This article and its associated code implementations are in the public domain.
+================================================================================
+////
+
+
+// >>> COSTUM ATTRIBUTES >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+// Links to other docs (can override via CLI params):
+:CWG-URI: https://pages.pathcom.com/~vadco/cwg.html
+:DAWG-URI: https://en.wikipedia.org/wiki/Directed_acyclic_word_graph
+:Trie-URI: https://en.wikipedia.org/wiki/Trie
+// *****************************************************************************
+
+
+== Blitzkrieg Attack Algorithm
+
+[.text-center]
+474 KB Compressed-Postfix Boolean-Word-Graph For The English Language
+
+
+6 Major Concerns Addressed On:  Monday, December 30, 2011.
+
+
+1. *First Concern:* A user defined character set of up to 256 letters is now supported.
+This accomodates certain foreign lexicons.
+
+2. *Second Concern:* Allowance for medium sized word lists.
++++2^22+++ (4,194,304) DAWG-Node count is the new upper limit.
+
+3. *Third Concern:* Superior "`ReplaceMeWith`" scheme.
+
+4. *Fourth Concern:* The use of CRC-Digest calculation, "`Tnode`" segmentation, and stable group sorting render DAWG creation *INSTANTANEOUS*.
+The Blitzkrieg algorithm generates a DAWG encoding so fast, that it might very well already be a Google trade secret, the kind of performance one might come to expect if you found a way to get Ken Thompson, Dennis Ritchie, and even the Great John von Neumann to build it for you.
+
+5. *Fifth Concern:* Certain Graph configurations led the previous version of this program to crash... *NO MORE*.
+
+6. *Sixth Concern:* A new DAWG int-node format is used to reduce the number of bitwise operations + add direct "`char`" extraction.
+
+NOTE: This algorithm is dedicated to Michael Czajka, a talented colleague, and fallen comrade.
+
+
+== Acknowledgments
+
+Special thanks to the following programmers for their input:
+
+*Rasmus Andersson* -- Motivated me to code the Blitzkrieg Algorithm when he found a wordlist which crashed the Traditional_Dawg_Creator code.
+
+*Jerzy Chalupski* -- Alerted me to the potential of how CRC calculation could boost speed during the graph reduction analysis.
+This is his object oriented C++ documentation; https://github.com/chalup/dawggenerator.
+It's not going to win him the Nobel Prize, but he must be doing something right, because the CRC idea is magnificent.
+
+*Edouard de Labareyre* -- Questions about French words.
+*Joakim Laumann* -- Questions about Norwegian words.
+*Oskar Groth* -- Questions about Swedish words.
+
+
+NOTE: The next program I write will use what I have learned here to solve a high profile NP-Complete problem.
+With this type of accomplishment, I hope to bypass the multi-phase Google interview process, and conduct a single Pow-Wow interview session with Ken Thompson, Google's Most Distinguished Engineer.
+
+
+== Introduction
+
+A directed acyclic word graph is simply a data structure that stores a lexicon of character strings or words in a compressed array of properly encoded integers.
+It is a great place to begin an investigation of lexicon-data-structure optimization, but ultimately, the traditional DAWG's limitations due to list-scrolling and Boolean return values will lead the elite-optimization-programmer to the more advanced
+link:{CWG-URI}[Caroline Word Graph^,title="Caroline Word Graph or CWG"].
+Any process that makes use of the
+link:{DAWG-URI}[DAWG^,title="Wikipedia on directed acyclic word graph (DAWG)"]
+data structure traverses it as though it were a list-style trie.
+A link:{Trie-URI}[TRIE^,title="Learn more about the Trie data structure"]
+is a data tree where every prefix is shared to reduce the amount of space required to store a lexicon and reduce the time required to "`retrieve`" a word.
+A Trie using explicit pointers, for each child node, becomes something like an enormous sparse matrix, populated mostly with zeros.
+Progression to a list-style Trie reduces the structure's size and retains the added benefit of a one-to-one ratio between words and End_Of_Word_Flags.
+The compromise is that finding a child node requires scrolling through a list of nodes.
+The DAWG data structure results from an attempt to reduce the size of a list-style Trie while maintaining the fast search times.
+This is carried out by attempting to replace identical postfix structures.
+It is critical to understand that all words ending with an "`s`" or "`es`" or "`tion`" or "`istic`" do NOT necessarily use the same nodes in the DAWG data structure.
+The example below will clarify this salient DAWG-property:
+
+Consider the trie of 11 words stored in 23 nodes:
+
+
+[cols="1a,3a",frame=none,grid=none]
+|===============================================================================
+|
+1. ablate
+2. ablated
+3. ablates
+4. ablating
+5. ablation
+6. ablations
+7. abject
+8. abjection
+9. abjections
+10. abjectly
+11. abjectness
+|
+image:dawg23_med.png[DAWG Example,width=60%]
+|===============================================================================
+
+
+It can be clearly observed that because there is no "`e`" following the "`t`" in "`abject,`" the "`t`" contained in "`ablate`" can not be the same node in a DAWG.
+Hence the "`tion`" shared by each word does not share the same postfix structure, and must not be the same path in the DAWG.
+It is true however that the "`ons`" structure will be shared by both words in a DAWG.
+That is only true for the optimal DAWG because the "`ons`" part of "`abjections`" is a direct child.
+A graphical representation is presented above.
+It is not computer generated.
+
+Due to the objective of space reduction being the essence of a DAWG, it is important to note that the minimal number of nodes will not produce the smallest DAWG.
+Space size of a data structure is given by the following equation:
+
+[.text-center]
+STRUCTURE SIZE = (NUMBER OF NODES) x (SIZE OF EACH NODE)
+
+The size of each node in computer science is not arbitrary.
+Data structures have a minimum unit size of 4-Bytes, and there are 1-Byte and 2-Byte basic integer types as well, but 3-Byte basic integer types do not exit.
+Standard C treats this as divine truth.
+Therefore if the size of each node can be reduced by half and the number of nodes does not double as a result, the total structure size has fallen.
+Replacing the Trie's Next pointer with breadth-first array population and a single Bit-Flag is why a DAWG-Node can fit into one 32-Bit integer.
+It is unfortunate that 3-Byte integers are not supported by modern processor architectures, because for TWL06, each int-node can be squeezed into 3-Bytes.
+There are 2 ways to make this happen even still, but they both require additional bit-manipulation instructions, so they can hardly be justified:
+
+1. The DAWG structure can be housed in an array of short integers plus an array of chars.
+In this scheme, the first-child index value would span into both parts of the structure, and so additional masking and shifting would be required to extract information from each node.
+If the number of nodes in your DAWG can fit into 16 bits, then this 3-Byte segmentation is the way to go.
+
+2. The DAWG structure can be housed in one array of chars.
+In this scheme, indexing each node in the structure requires multiplying by 3, which can be accomplished by the following equation: `Index = Index<<1 + Index;` Integer casting is then needed, as well as one additional bit-mask.
+The one equation involves 2 basic operations plus an assignment, so although you are saving 25% in data space, you are paying for it in extra instructions.
+If your processor is either lacking in data cache, or it contains native 3-Byte hardware instructions, then this is the way to go, otherwise avoid the additional computation.
+
+
+[[structure]]
+== The Blitzkrieg DAWG Structure
+
+A DAWG-Node can be seen as containing a letter, references to its children, and a Flag indicating the completion of a word.
+Now, because a single character does not represent an entire word, or key, computer science would not refer to (a single letter, a flag, and pointers) as a "`node`".
+Rather, each character would be called an "`edge`".
+In order to simplify this DAWG treatment, the "`edge`" convention has been disposed of.
+A node in a DAWG is now defined as "`an Explicit-Letter, an index to the First-Child node, an End-Of-Word flag, and an End-Of-List flag`".
+
+We are attempting to minimize the size of a single "`node`" so that it will be less than or equal to 32 bits while at the same time keeping the number of nodes low enough to justify the reduction of information in each node.
+For now, this is a double-edged sword, because it forces graph traversal to scroll through Child-Lists.
+
+In short, the 26 letters in the English alphabet require 5-bits to store a Letter-Index, but since the space is available, we shall use a full 8-Bit Byte to store an Explicit-Letter, with the potential to accommodate languages with up to 256 unique characters.
+Additionally, no extra instruction will be needed to turn a Letter-Index into a usable char.
+Nodes need a single bit to store an End-Of-Word flag.
+A list of children should make sense because this would reduce the number of references for children to just two.
+One reference is for the First-Child of the list below a node, and a second reference is for Next-Node in the current list.
+
+Experimentation has shown that there is one further reduction that will ultimately reduce the size of the final DAWG, but increase the number of nodes slightly.
+The DAWG nodes will be stored into a contiguous array, where the Next-Node reference will be replaced by a single End-Of-List bit-flag, where the Next-Node in a list is assumed to be the next element in the array unless the End-Of-List bit-flag is set.
+This will increase the total number of nodes required because the only DirectChild nodes will be tested for emilination, to keep the list structures intact, in other words, the first node in a Child-List is the only type of node where elimination can begin.
+Clearly, every node in the Next-List and every node below a redundant node will also be removed, so there will not be as much of a discrepancy in node elimination as one would expect, given this strict condition.
+
+This "`Child Reference Only`" step is far from trivial, as it requires a "`breadth`" first tree traversal.
+This type of traversal is required to enter all of the temporary Tnodes into a 4D array which holds similar groups of pointers which will be sorted using 3 comparison values.
+Also, this type of traversal is required once more when assigning indexes to all of the remaining Tnodes.
+Complexity arises from the requirement of a secondary data structure know as a queue, so that traversal is carried out level by level, as opposed to the standard recursive "`depth-first`" traversal.
+
+With ten bits spoken for, that leaves 22 bits remaining for the First-Child index.
+22-Bits translates into a maximum number of array elements equal to 4,194,304.
+This value exceeds the number of nodes needed to store TWL06 by a large margin.
+TWL06 fits into 121,174 nodes (including the Null zero node), which requires only 17-bits.
+This number only reaches 123,670 nodes using a less complex algorithm, which used to be presented on this very page.
+Every node is a 4-Byte integer, so that is where 474 KB, presented above, comes from.
+At less than a half Mega Byte to store a fast Boolean graph of the English Language, the traditional DAWG encoding has its appeal.
+It would require almost double this space to store a DAWG with a minimal node count.
+Learn this data structure, and then migrate to the more advanced link:{CWG-URI}[Caroline Word Graph^,title="Caroline Word Graph or CWG"].
+
+The Blitzkrieg encoding places an Explicit-Letter into the first Byte of each Node-Integer, followed by the End-Of-List flag, followed by the End-Of-Word flag, and the final 22 most significant bits hold the First-Child index value, which can now be extracted using a single Bit-Shift.
+Below, I have included a printout of what each int-node looks like and the macros used to extract member data from them.
+
+............................................................
+[1111111111111111111111|0|0|00000000] - CHILD_INDEX_BIT_MASK
+[0000000000000000000000|1|0|00000000] - END_OF_WORD_BIT_MASK
+[0000000000000000000000|0|1|00000000] - END_OF_LIST_BIT_MASK
+[0000000000000000000000|0|0|11111111] - LETTER_BIT_MASK
+............................................................
+
+[source,c]
+[role=small]
+----------------------------------
+#define CHILD_BIT_SHIFT 10
+#define EOW_BIT_MASK 0X00000200
+#define EOL_BIT_MASK 0X00000100
+#define LETTER_BIT_MASK 0X000000FF
+----------------------------------
+
+[source,c]
+[role=small]
+------------------------------------------------------------------------------------------
+#define DAWG_LETTER(thearray, theindex) (thearray[theindex]&LETTER_BIT_MASK)
+#define DAWG_EOW(thearray, theindex) (thearray[theindex]&EOW_BIT_MASK)
+#define DAWG_NEXT(thearray, theindex) ((thearray[theindex]&EOL_BIT_MASK)? 0: theindex + 1)
+#define DAWG_CHILD(thearray, theindex) (thearray[theindex]>>CHILD_BIT_SHIFT)
+------------------------------------------------------------------------------------------
+
+
+[[creation]]
+== Blitzkrieg DAWG Genesis
+
+When creating a DAWG encoding with the Blitzkrieg_Trie_Attack algorithm, it will seem as though you have activated a time machine and transported the new DAWG data file into the PAST.
+Yes, the Blitzkrieg algorithm is that much faster than the older versions of Traditional_Dawg_Creator code, which took several minutes to compute TWL06 using even a 3Ghz multi-core PC.
+The 17 steps are listed below.
+<<Commented C-code>> is also provided, and will assist anyone who is interested in understanding how these steps actually work.
+
+
+* *Step 0:*  Allocate the framework for the intermediate Array-Data-Structure.
+
+* *Step 1:*  Create a temporary list-style Trie and begin filling it with the words from "```Word-List.txt```".
+
+* *Step 2:*  Calculate the InternalValues comparison integers for each Tnode.
+
+** The InternalValues integer contains all of the unique internal comparison values of each Tnode in one number.
+
+* *Step 3:*  Eliminate recursion by calculating the recursive CrcDigest for each Tnode.
+
+** The CrcDigest value is calculated by using the InternalValues of each Tnode, and then building a longer data-message with information gathered from all Child nodes and Next nodes, seperated by pre-defined cypher integers.
+Tnodes without any Child or Next lists simply copy their InternalValues into their CrcDigest.
+
+* *Step 4:*  Count Tnodes into 780 groups, segmented by MaxChildDepth, Letter, and DirectChild.
+
+* *Step 5:*  Initial Tnode counting is complete, so display the results:
+
+* *Step 6:*  Allocate a 4-D array of Tnode pointers to tag redundant Tnodes for replacement.
+
+* *Step 7:*  Populate the 4 dimensional Tnode pointer array, keeping DirectChild nodes closer to the end.
+
+* *Step 8:*  Use the stable Merge-Sort algorithm to sort [MaxChildDepth][LetterIndex] groups by CrcDigest values.
+
+* *Step 9:*  Tag entire Tnode branch structures as Dangling - Elimination begins with DirectChild Tnodes and filters down:
+
+** The very heart of DAWG genesis, where the Blitzkrieg shines with CRC, and Tnode Grouping.
+** Seperate groups exist for each [MaxChildDepth]-[LetterIndex] pair.
+** Groups of similar Tnodes, are now sorted by 3 values, [BreadthFirst], [DirectChild], [CrcDigest].
+** This Blitzkrieg Scheme means that each redundant Tnode patch will directly follow its living Tnode replacement.
+
+* *Step 10:*  Count the number of living Tnodes by traversing the Raw-Trie to check the Dangling numbers.
+
+* *Step 11:*  Using the BlitzkriegTrieAttack, substitute Dangling Tnodes with internal ReplaceMeWith values.
+
+* *Step 12:*  Blitzkrieg Attack is victorious, so assign array indicies to all living Tnodes using a Breadth-First-Queue.
+
+* *Step 13:*  Populate the new Working-Array-Dawg structure, used to verify validity and create the final integer-graph-encodings.
+Then verify that all 3 Tnode counting methods yield the same count.
+
+* *Step 14:*  Creation of the traditional-DAWG is complete, so store it in a binary file for use.
+
+* *Step 15:*  Output a text file with all the node information explicitly layed out.
+
+* *Step 16:*  Display the Mask-Format for the DAWG int-nodes.
+
+
+[[implement]]
+== C & Java Implementation
+
+Due to popular demand, there are Four versions of DAWG C-code published on this page.
+The oldest, more-basic code, the newest Blitzkrieg code, and two intermediate steps.
+Download the untampered with files below.
+The code being displayed is the dazzling Blitzkrieg Genesis code and a WildCard anagrammer.
+The C-code compiles just fine with "`gcc -O3`", so it works in Linux, and Windows using Cygwin.
+If you have an "`Apple`", I suggest that you decide to buy a real computer next time.
+For those who can tolerate Java, source code for the old web-start-app is also available:
+
+
+[discrete]
+=== Latest Blitzkrieg C-code
+
+:c-latest: ./src-c-latest/
+:file1: Word-List.txt
+:file2: Blitzkrieg_Trie_Attack_Dawg_Creator_Custom_Character_Set.c
+:file3: CRC-32.dat
+:file4: Blitzkrieg_Functionality_Test.c
+:file5: Compile-CRC-32-Lookup-Table.c
+
+1. link:{c-latest}{file1}[`{file1}`^,title="View TWL06 word list file"]
+{sp}-- TWL06 word list in a correct Windows format.
+
+2. link:{c-latest}{file2}[`{file2}`^,title="View C source file"]
+{sp}-- Blitzkrieg DAWG Genesis C-code.
+
+3. link:{c-latest}{file3}[`{file3}`^,title="View CRC-32 data source file"]
+{sp}-- Byte-wise CRC-32 data file.
+
+4. link:{c-latest}{file4}[`{file4}`^,title="View C source file"]
+{sp}-- Test the new Blitzkrieg DAWG.
+
+5. link:{c-latest}{file5}[`{file5}`^,title="View C source file"]
+{sp}-- Code used to generate a CRC lookup table.
+
+
+[discrete]
+=== Old C-code
+
+:c-old: ./src-c-old/
+:file1: Word-List.txt
+:file2: TraditionalDawgCreatorUpdate.c
+:file3: TraditionalDawgCreator.c
+:file4: TraditionalDawgAnagrammer.c
+
+1. link:{c-old}{file1}[`{file1}`^,title="View TWL06 word list file"]
+{sp}-- TWL06 word list in a correct Windows format.
+
+2. link:{c-old}{file2}[`{file2}`^,title="View C source file"]
+{sp}-- The old Traditional-DAWG Creator C-code.
+
+3. link:{c-old}{file3}[`{file3}`^,title="View C source file"]
+{sp}-- The older Traditional-DAWG Creator C-code.
+
+4. link:{c-old}{file4}[`{file4}`^,title="View C source file"]
+{sp}-- DAWG functionality demonstrator C-code.
+
+
+[discrete]
+=== Older C-code
+
+:c-older: ./src-c-older/
+:file1: Lexicon.txt
+:file2: GoogleDawgCreatorSubmit.c
+:file3: GoogleDawgAnagrammerSubmit.c
+
+1. link:{c-older}{file1}[`{file1}`^,title="View TWL06 word list file"]
+{sp}-- TWL06 Scrabble word list in proper text file format
+
+2. link:{c-older}{file2}[`{file2}`^,title="View C source file"]
+{sp}-- The even older DAWG-creation C code.
+
+3. link:{c-older}{file3}[`{file3}`^,title="View C source file"]
+{sp}-- The DAWG-testing anagram C code.
+
+
+[discrete]
+=== Old Java Web-Start code
+
+:java-old: ./src-java-old/
+:file1: Dawg.java
+:file2: Driver.java
+:file3: Traditional_Dawg_For_Word-List.dat
+:file4: Engine.jar
+:file5: Engine.jnlp
+
+1. link:{java-old}{file1}[`{file1}`^,title="View Java source file"]
+{sp}-- DAWG functionality code, slanted for use in Java.
+
+2. link:{java-old}{file2}[`{file2}`^,title="View Java source file"]
+{sp}-- GUI container, a product of NetBeans.
+
+3. link:{java-old}{file3}[`{file3}`^,title="Open/Downlaod pre-compiled DAWG data file"]
+{sp}-- TWL06 pre-compiled DAWG data file.
+
+4. link:{java-old}{file4}[`{file4}`^,title="Open/Downlaod Jar file"]
+{sp}-- A runnable Jar file via the Eclipse IDE.
+
+5. link:{java-old}{file5}[`{file5}`^,title="View JNLP source file"]
+{sp}-- Java-Web-Start launching protocol file.
+
+
+[[commented-code]]
+== Commented C-code
+
+:srcdir: ./src-c-latest/
+
+
+=== Blitzkrieg DAWG Creator
+
+:srcfile: Blitzkrieg_Trie_Attack_Dawg_Creator_Custom_Character_Set.c
+
+.link:{srcdir}{srcfile}["`{srcfile}`"^,title="View source file"]
+[source,c]
+[role=small]
+----------------------------
+include::{srcdir}{srcfile}[]
+----------------------------
+
+
+=== Blitzkrieg Functionality Test
+
+:srcfile: Blitzkrieg_Functionality_Test.c
+
+.link:{srcdir}{srcfile}["`{srcfile}`"^,title="View source file"]
+[source,c]
+[role=small]
+----------------------------
+include::{srcdir}{srcfile}[]
+----------------------------
+
+
+[[contact]]
+== Contact Information
+
+Contact: JohnPaul Adamovsky -- ({nbsp}{email}{nbsp}) -- Please feel free to ask me questions.
+
+Phone: (416) 231-7577
+
+////
+This is the mark of my trade...
+image:Trademark.jpg[image,width=700,height=178]
+////
+
+*All The Very Best,*
+
+JohnPaul Adamovsky
+
+
+////
+https://www.isc.ro[*Internet Scrabble Club*^] -- The best place to play scrabble online
+////
+
+// EOF //

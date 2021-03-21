@@ -27,6 +27,17 @@ trim_trailing_whitespace = true
 insert_final_newline = true
 
 
+## AsciiDoc
+###########
+[*.{ad,adoc,asciidoc}]
+indent_size = 2
+indent_style = space
+end_of_line = unset
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+
 ## Shell Scripts
 ################
 [*.sh]
@@ -85,5 +96,24 @@ insert_final_newline = true
 block_comment_start = /*
 block_comment = *
 block_comment_end = */
+
+
+## Java Source Files
+####################
+[*.java]
+indent_style = tab
+indent_size = unset
+end_of_line = unset
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.jnlp]
+indent_style = space
+indent_size = 4
+end_of_line = unset
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
 
 # EOF #

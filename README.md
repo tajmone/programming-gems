@@ -8,7 +8,11 @@ A collection of assorted gems on the art of computer programming, found around t
 
 Created by [Tristano Ajmone] on February, 2021, as a personal effort to re-organize assets gathered in the course of time, and share them with others.
 
+# License
+
 Each asset is governed by its own license terms, as indicated in its containing folder.
+
+> **NOTE** — Currently, there are only public domain resources in this project.
 
 <!-----------------------------------------------------------------------------
                                REFERENCE LINKS

@@ -1,0 +1,12 @@
+
+## JohnPaul Adamovsky's DAWG Blitzkrieg Attack Algorithm
+########################################################
+
+# Default repository settings overrides...
+
+[*.c]
+indent_style = space
+indent_size = unset
+
+[src-c-older/*.txt]
+end_of_line = lf

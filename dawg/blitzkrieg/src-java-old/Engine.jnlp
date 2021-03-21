@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jnlp spec="1.0+" 
+        codebase="http://pages.pathcom.com/~vadco"
+        href="Engine.jnlp">
+    <information>
+        <title>TWL06 Lexicon Engine</title>
+        <vendor>JohnPaul Adamovsky - logarithm69@hotmail.com</vendor>
+    </information>
+    <resources>
+        <!-- Application Resources -->
+        <j2se version="1.6+"
+              href="http://java.sun.com/products/autodl/j2se"/>
+        <jar href="Engine.jar" main="true" />
+
+    </resources>
+    <application-desc
+         name="TWL06 Lexicon Engine"
+         main-class="com.jp.Driver">
+     </application-desc>
+     <update check="background"/>
+</jnlp>
